@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>程序员秋棠 - 个人主页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid #667eea;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .profile-info h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .profile-info .title {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .profile-info .description {
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat .number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat .label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .section h3 {
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 1.8rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .skill-category {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .skill-category h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .skill-tag {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+
+        .skill-tag:hover {
+            transform: translateY(-2px);
+        }
+
+        .experience-item {
+            border-left: 3px solid #667eea;
+            padding-left: 20px;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .experience-item::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 0;
+            width: 13px;
+            height: 13px;
+            background: #667eea;
+            border-radius: 50%;
+        }
+
+        .experience-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .experience-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .experience-period {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .experience-company {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+
+        .experience-description {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            transition: transform 0.2s;
+        }
+
+        .contact-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .contact-icon {
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .contact-info a {
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .contact-info a:hover {
+            color: #667eea;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .project-title {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .project-tech {
+            color: #667eea;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .project-description {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 30px 0;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .profile-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .stats {
+                justify-content: center;
+            }
+
+            .experience-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>程序员秋棠</h1>
+            <p>热爱编程，专注于Java全栈开发，致力于分享技术经验和学习心得</p>
+        </div>
+
+        <!-- 个人信息卡片 -->
+        <div class="profile-card">
+            <img src="https://avatars.githubusercontent.com/u/12345678?v=4" alt="秋棠" class="avatar">
+            <div class="profile-info">
+                <h2>秋棠</h2>
+                <div class="title">全栈开发工程师</div>
+                <div class="description">
+                    热爱编程，专注于Java全栈开发，致力于分享技术经验和学习心得。
+                    拥有3年+的开发经验，熟悉前后端技术栈，热衷于开源项目和技术分享。
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="number">3+</div>
+                        <div class="label">年经验</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number">10+</div>
+                        <div class="label">项目</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number">5+</div>
+                        <div class="label">技术栈</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 技术栈 -->
+        <div class="section">
+            <h3>技术栈</h3>
+            <div class="skills-grid">
+                <div class="skill-category">
+                    <h4>后端开发</h4>
+                    <div class="skill-tags">
+                        <span class="skill-tag">Java</span>
+                        <span class="skill-tag">Spring Boot</span>
+                        <span class="skill-tag">Spring Cloud</span>
+                        <span class="skill-tag">MyBatis</span>
+                        <span class="skill-tag">MyBatis-Plus</span>
+                        <span class="skill-tag">MySQL</span>
+                        <span class="skill-tag">Redis</span>
+                        <span class="skill-tag">MongoDB</span>
+                        <span class="skill-tag">RabbitMQ</span>
+                        <span class="skill-tag">Elasticsearch</span>
+                    </div>
+                </div>
+                <div class="skill-category">
+                    <h4>前端开发</h4>
+                    <div class="skill-tags">
+                        <span class="skill-tag">HTML5</span>
+                        <span class="skill-tag">CSS3</span>
+                        <span class="skill-tag">JavaScript</span>
+                        <span class="skill-tag">Vue.js</span>
+                        <span class="skill-tag">React</span>
+                        <span class="skill-tag">TypeScript</span>
+                        <span class="skill-tag">Webpack</span>
+                        <span class="skill-tag">Vite</span>
+                        <span class="skill-tag">Ant Design</span>
+                        <span class="skill-tag">Element UI</span>
+                    </div>
+                </div>
+                <div class="skill-category">
+                    <h4>运维部署</h4>
+                    <div class="skill-tags">
+                        <span class="skill-tag">Docker</span>
+                        <span class="skill-tag">Kubernetes</span>
+                        <span class="skill-tag">Jenkins</span>
+                        <span class="skill-tag">Git</span>
+                        <span class="skill-tag">Linux</span>
+                        <span class="skill-tag">Nginx</span>
+                        <span class="skill-tag">阿里云</span>
+                        <span class="skill-tag">腾讯云</span>
+                        <span class="skill-tag">AWS</span>
+                    </div>
+                </div>
+                <div class="skill-category">
+                    <h4>其他技能</h4>
+                    <div class="skill-tags">
+                        <span class="skill-tag">微服务架构</span>
+                        <span class="skill-tag">分布式系统</span>
+                        <span class="skill-tag">性能优化</span>
+                        <span class="skill-tag">系统设计</span>
+                        <span class="skill-tag">项目管理</span>
+                        <span class="skill-tag">技术文档</span>
+                        <span class="skill-tag">团队协作</span>
+                        <span class="skill-tag">敏捷开发</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 工作经历 -->
+        <div class="section">
+            <h3>工作经历</h3>
+            <div class="experience-item">
+                <div class="experience-header">
+                    <div class="experience-title">全栈开发工程师</div>
+                    <div class="experience-period">2023-至今</div>
+                </div>
+                <div class="experience-company">自由职业者</div>
+                <div class="experience-description">
+                    专注于个人项目开发和开源贡献，参与多个开源项目，提供技术咨询和培训服务。
+                    独立完成多个企业级项目，包括用户中心系统、在线教育平台等。
+                </div>
+            </div>
+            <div class="experience-item">
+                <div class="experience-header">
+                    <div class="experience-title">Java开发工程师</div>
+                    <div class="experience-period">2021-2023</div>
+                </div>
+                <div class="experience-company">某互联网公司</div>
+                <div class="experience-description">
+                    负责企业级应用开发，参与微服务架构设计，优化系统性能，提升用户体验。
+                    参与电商平台后端开发，负责订单系统、支付系统等核心模块。
+                </div>
+            </div>
+            <div class="experience-item">
+                <div class="experience-header">
+                    <div class="experience-title">初级开发工程师</div>
+                    <div class="experience-period">2020-2021</div>
+                </div>
+                <div class="experience-company">某软件公司</div>
+                <div class="experience-description">
+                    参与Web应用开发，学习并掌握Spring Boot、MyBatis等主流框架。
+                    负责公司内部管理系统的开发和维护工作。
+                </div>
+            </div>
+        </div>
+
+        <!-- 项目经历 -->
+        <div class="section">
+            <h3>项目经历</h3>
+            <div class="projects-grid">
+                <div class="project-card">
+                    <div class="project-title">用户中心系统</div>
+                    <div class="project-tech">Spring Boot + MyBatis + Vue.js</div>
+                    <div class="project-description">
+                        基于Spring Boot的用户管理系统，实现了用户注册、登录、权限管理等功能，
+                        采用前后端分离架构，支持多环境部署，包含完整的单元测试。
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-title">在线教育平台</div>
+                    <div class="project-tech">Spring Cloud + MySQL + Redis</div>
+                    <div class="project-description">
+                        微服务架构的在线教育平台，包含课程管理、用户学习、支付系统等模块，
+                        支持高并发访问，采用分布式缓存和消息队列优化性能。
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-title">电商管理系统</div>
+                    <div class="project-tech">Spring Boot + MyBatis + React</div>
+                    <div class="project-description">
+                        企业级电商后台管理系统，包含商品管理、订单处理、用户管理、数据分析等功能，
+                        采用响应式设计，支持多端访问。
+                    </div>
+                </div>
+                <div class="project-card">
+                    <div class="project-title">个人博客系统</div>
+                    <div class="project-tech">Spring Boot + Thymeleaf + MySQL</div>
+                    <div class="project-description">
+                        个人技术博客系统，支持文章发布、评论管理、标签分类等功能，
+                        采用响应式设计，SEO友好，支持Markdown编辑。
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 联系方式 -->
+        <div class="section">
+            <h3>联系方式</h3>
+            <div class="contact-grid">
+                <div class="contact-item">
+                    <div class="contact-icon">📧</div>
+                    <div class="contact-info">
+                        <a href="mailto:qiutang@example.com">qiutang@example.com</a>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">🐙</div>
+                    <div class="contact-info">
+                        <a href="https://github.com/qiutang" target="_blank">GitHub</a>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">📝</div>
+                    <div class="contact-info">
+                        <a href="https://blog.qiutang.icu" target="_blank">个人博客</a>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">💬</div>
+                    <div class="contact-info">
+                        <a href="#">微信: qiutang_dev</a>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">🐧</div>
+                    <div class="contact-info">
+                        <a href="#">QQ: 123456789</a>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">📱</div>
+                    <div class="contact-info">
+                        <a href="https://weibo.com/qiutang" target="_blank">微博</a>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">🤔</div>
+                    <div class="contact-info">
+                        <a href="https://www.zhihu.com/people/qiutang" target="_blank">知乎</a>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-icon">📺</div>
+                    <div class="contact-info">
+                        <a href="https://space.bilibili.com/qiutang" target="_blank">B站</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 教育背景 -->
+        <div class="section">
+            <h3>教育背景</h3>
+            <div class="experience-item">
+                <div class="experience-header">
+                    <div class="experience-title">计算机科学与技术</div>
+                    <div class="experience-period">本科</div>
+                </div>
+                <div class="experience-company">某知名大学</div>
+                <div class="experience-description">
+                    系统学习计算机基础理论，包括数据结构、算法、操作系统、计算机网络等核心课程。
+                    参与多个课程设计项目，培养了扎实的编程基础和问题解决能力。
+                </div>
+            </div>
+        </div>
+
+        <!-- 兴趣爱好 -->
+        <div class="section">
+            <h3>兴趣爱好</h3>
+            <div class="skill-tags" style="margin-top: 20px;">
+                <span class="skill-tag">编程</span>
+                <span class="skill-tag">开源项目</span>
+                <span class="skill-tag">技术分享</span>
+                <span class="skill-tag">阅读</span>
+                <span class="skill-tag">旅行</span>
+                <span class="skill-tag">摄影</span>
+                <span class="skill-tag">音乐</span>
+                <span class="skill-tag">运动</span>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="footer">
+            <p>© 2024 程序员秋棠. All rights reserved.</p>
+            <p>用代码改变世界，让技术创造价值</p>
+        </div>
+    </div>
+</body>
+</html> 
