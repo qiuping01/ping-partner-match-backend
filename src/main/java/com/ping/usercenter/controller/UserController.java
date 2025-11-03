@@ -11,17 +11,14 @@ import com.ping.usercenter.model.domain.request.UserLoginRequest;
 import com.ping.usercenter.model.domain.request.UserRegisterRequest;
 import com.ping.usercenter.service.UserService;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.ping.usercenter.contant.UserConstant.ADMIN_ROLE;
 import static com.ping.usercenter.contant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -41,14 +38,14 @@ public class UserController {
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         if (userRegisterRequest == null) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         String userAccount = userRegisterRequest.getUserAccount();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getUserPassword();
         String planetCode = userRegisterRequest.getPlanetCode();
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode)) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         long result = userService.userRegister(userAccount, userPassword,
                 checkPassword, planetCode);
@@ -60,13 +57,13 @@ public class UserController {
     public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest,
                                         HttpServletRequest request) {
         if (userLoginRequest == null) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
 
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User user = userService.userLogin(userAccount, userPassword, request);
         return ResultUtils.success(user);
@@ -75,7 +72,7 @@ public class UserController {
     @PostMapping("/logout")
     public BaseResponse<Integer> userLogout(HttpServletRequest request) {
         if (request == null) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         int result = userService.userLogout(request);
         return ResultUtils.success(result);
@@ -87,7 +84,7 @@ public class UserController {
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userObj;
         if (currentUser == null) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         //对于用户信息频繁变化的场景来说建议查库
         long userId = currentUser.getId();
@@ -103,7 +100,7 @@ public class UserController {
 
         // 鉴权 - 仅管理员可查询
         if (!userService.isAdmin(request)) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -122,9 +119,9 @@ public class UserController {
     @GetMapping("/search/tags")
     public BaseResponse<List<User>> searchByTags(@RequestParam(required = false) List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        List<User> userList = userService.searchUsersByTags(tagNameList);
+        List<User> userList = userService.searchUsersByTagsBySQL(tagNameList);
         return ResultUtils.success(userList);
     }
 
@@ -142,7 +139,7 @@ public class UserController {
                                             HttpServletRequest request) {
         // 校验参数是否为空
         if (user == null) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         // 鉴权
         User loginUser = userService.getLoginUser(request);
@@ -162,7 +159,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         if (id <= 0) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         boolean b = userService.removeById(id);
         return ResultUtils.success(b);

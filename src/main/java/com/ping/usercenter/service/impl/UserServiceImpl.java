@@ -2,8 +2,6 @@ package com.ping.usercenter.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.ping.usercenter.common.ErrorCode;
 import com.ping.usercenter.exception.BusinessException;
 import com.ping.usercenter.model.domain.User;
@@ -17,10 +15,7 @@ import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -67,40 +62,40 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword,
                 planetCode)) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR,"参数为空");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"参数为空");
         }
         if (userAccount.length() < 4) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR,"用户账号过短");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户账号过短");
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR,"用户密码过短");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户密码过短");
         }
         if (planetCode.length() > 5) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR,"星球编号过长");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"星球编号过长");
         }
         // 账户不能包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR,"账户包含特殊字符");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"账户包含特殊字符");
         }
         // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR,"密码相同");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"密码相同");
         }
         // 账户不+能重复,查询数据库尽量放到后面，以免浪费资源
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userAccount", userAccount);
         long count = userMapper.selectCount(queryWrapper);
         if (count > 0) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR,"账户重复");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"账户重复");
         }
         // 星球编号不能重复
         queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("planetCode", planetCode);
         count = userMapper.selectCount(queryWrapper);
         if (count > 0) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR,"编号重复");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"编号重复");
         }
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -196,35 +191,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return 1;
     }
 
-
     /**
-     * 根据标签搜索用户 （内存查询版）
+     * 根据标签搜索用户（SQL 查询版）
      *
      * @param tagNameList 用户要拥有的标签
      * @return
      */
     @Override
-    public List<User> searchUsersByTags(List<String> tagNameList) {
+    public List<User> searchUsersByTagsBySQL(List<String> tagNameList) {
         if (CollectionUtils.isEmpty(tagNameList)) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        // 1. 先查询所有用户
+
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+
+        for (String tagName : tagNameList) {
+            // 方法1：使用 like（当前方案）
+            queryWrapper = queryWrapper.like("tags", "\"" + tagName + "\"");
+
+        }
+
         List<User> userList = userMapper.selectList(queryWrapper);
-        Gson gson = new Gson();
-        // 2. 在内存中判断是否包含要求的标签
-        return userList.stream().filter(user -> {
-            String tagStr = user.getTags();
-            Set<String> tempTagNameSet = gson
-                    .fromJson(tagStr, new TypeToken<Set<String>>() {}.getType());
-            tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());
-            for  (String tagName : tagNameList) {
-                if(!tempTagNameSet.contains(tagName)) {
-                    return false;
-                }
-            }
-            return true;
-        }).map(this::getSafetyUser).collect(Collectors.toList());
+        return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
     }
 
     /**
@@ -239,7 +227,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 1. 参数校验 - 检查用户ID是否有效
         long userId = user.getId();
         if (userId <= 0) {
-            throw new BusinessException(ErrorCode.PARMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         // TODO 补充校验，如果用户没有传任何要更新的信息，就直接报错，不用执行 update 语句
         // 2. 权限校验 - 管理员可更新任意用户，普通用户只能更新自己

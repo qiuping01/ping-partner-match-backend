@@ -1,7 +1,5 @@
 package com.ping.usercenter.common;
 
-import lombok.Data;
-
 /**
  * 错误码
  *
@@ -10,7 +8,7 @@ import lombok.Data;
 public enum ErrorCode {
 
     SUCCESS(0,"ok",""),
-    PARMS_ERROR(4000, "请求参数错误", ""),
+    PARAMS_ERROR(4000, "请求参数错误", ""),
     NULL_ERROR(4001,"请求数据为空",""),
     NOT_LOGIN(40100,"未登录",""),
     NO_AUTH(40101,"无权限",""),
