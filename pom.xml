@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.ping</groupId>
-    <artifactId>user-center</artifactId>
+    <artifactId>partner-match</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>user-center</name>
-    <description>user-center</description>
+    <name>partner-match</name>
+    <description>partner-match</description>
     <properties>
         <java.version>1.8</java.version>
     </properties>
@@ -65,6 +65,12 @@
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-data-redis</artifactId>
             <version>2.6.4</version>
+        </dependency>
+        <!-- https://redisson.pro/docs/getting-started/ -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.17.5</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
