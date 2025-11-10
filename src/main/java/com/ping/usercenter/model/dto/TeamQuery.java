@@ -2,13 +2,17 @@ package com.ping.usercenter.model.dto;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.ping.usercenter.common.PageRequest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 队伍查询封装类
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class TeamQuery {
+public class TeamQuery extends PageRequest {
+
     /**
      * id
      */
