@@ -2,6 +2,7 @@ package com.ping.usercenter.service;
 
 import com.ping.usercenter.model.domain.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.ping.usercenter.model.domain.User;
 
 /**
  * @author 21877
@@ -10,4 +11,12 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface TeamService extends IService<Team> {
 
+    /**
+     * 创建队伍
+     *
+     * @param team
+     * @param loginUser
+     * @return
+     */
+    long addTeam(Team team, User loginUser);
 }
