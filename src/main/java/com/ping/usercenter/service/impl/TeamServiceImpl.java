@@ -32,7 +32,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     private UserTeamService userTeamService;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class) // 开启事务 出问题抛异常
     public long addTeam(Team team, User loginUser) {
         // 1. 请求参数是否为空？
         if (team == null) {
