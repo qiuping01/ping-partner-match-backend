@@ -14,6 +14,7 @@ import com.ping.usercenter.service.TeamService;
 import com.ping.usercenter.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.BeansException;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;

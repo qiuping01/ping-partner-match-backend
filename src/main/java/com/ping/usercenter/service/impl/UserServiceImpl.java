@@ -62,40 +62,40 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword,
                 planetCode)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"参数为空");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (userAccount.length() < 4) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户账号过短");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户密码过短");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
         }
         if (planetCode.length() > 5) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"星球编号过长");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "星球编号过长");
         }
         // 账户不能包含特殊字符
         String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"账户包含特殊字符");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户包含特殊字符");
         }
         // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"密码相同");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码相同");
         }
         // 账户不+能重复,查询数据库尽量放到后面，以免浪费资源
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userAccount", userAccount);
         long count = userMapper.selectCount(queryWrapper);
         if (count > 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"账户重复");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户重复");
         }
         // 星球编号不能重复
         queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("planetCode", planetCode);
         count = userMapper.selectCount(queryWrapper);
         if (count > 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR,"编号重复");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "编号重复");
         }
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -206,8 +206,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
 
         for (String tagName : tagNameList) {
-            // 方法1：使用 like（当前方案）
-            queryWrapper = queryWrapper.like("tags", "\"" + tagName + "\"");
+            // 方法1：使用 like（当前方案）- “tagName” 精确匹配
+           queryWrapper = queryWrapper.like("tags", "\"" + tagName + "\"");
 
         }
 
@@ -223,7 +223,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return
      */
     @Override
-    public int updateUser(User user,User loginUser) {
+    public int updateUser(User user, User loginUser) {
         // 1. 参数校验 - 检查用户ID是否有效
         long userId = user.getId();
         if (userId <= 0) {
@@ -231,7 +231,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         // TODO 补充校验，如果用户没有传任何要更新的信息，就直接报错，不用执行 update 语句
         // 2. 权限校验 - 管理员可更新任意用户，普通用户只能更新自己
-        if(!isAdmin(loginUser) && userId != loginUser.getId()) {
+        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
         // 3. 检查用户是否存在以及敏感字段的校验
@@ -288,7 +288,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public boolean isAdmin(User loginUser) {
-        return loginUser!= null && loginUser.getUserRole() == ADMIN_ROLE;
+        return loginUser != null && loginUser.getUserRole() == ADMIN_ROLE;
     }
 
 }
