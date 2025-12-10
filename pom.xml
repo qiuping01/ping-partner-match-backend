@@ -42,6 +42,12 @@
             <artifactId>gson</artifactId>
             <version>2.8.9</version>
         </dependency>
+        <!-- 工具库：https://plus.hutool.cn/pages/ai/ -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-ai</artifactId>
+            <version>5.8.38</version>
+        </dependency>
         <!--添加swagger的依赖-->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>

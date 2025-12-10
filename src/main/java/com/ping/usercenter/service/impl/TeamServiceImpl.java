@@ -1,5 +1,7 @@
 package com.ping.usercenter.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ping.usercenter.common.ErrorCode;
@@ -7,17 +9,22 @@ import com.ping.usercenter.exception.BusinessException;
 import com.ping.usercenter.model.domain.Team;
 import com.ping.usercenter.model.domain.User;
 import com.ping.usercenter.model.domain.UserTeam;
+import com.ping.usercenter.model.dto.TeamQuery;
 import com.ping.usercenter.model.enums.TeamStatusEnum;
+import com.ping.usercenter.model.vo.TeamUserVO;
+import com.ping.usercenter.model.vo.UserVO;
 import com.ping.usercenter.service.TeamService;
 import com.ping.usercenter.mapper.TeamMapper;
+import com.ping.usercenter.service.UserService;
 import com.ping.usercenter.service.UserTeamService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.Date;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author 21877
@@ -30,6 +37,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Resource
     private UserTeamService userTeamService;
+
+    @Resource
+    private UserService userService;
 
     @Override
     @Transactional(rollbackFor = Exception.class) // 开启事务 出问题抛异常
@@ -92,7 +102,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         team.setUserId(userId);
         boolean result = this.save(team);
         Long teamId = team.getId();
-        if(!result || teamId == null) {
+        if (!result || teamId == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
         }
         // 5. 插入用户 ---> 队伍关系到关系表
@@ -101,10 +111,109 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         userTeam.setTeamId(teamId);
         userTeam.setJoinTime(new Date());
         result = userTeamService.save(userTeam);
-        if(!result) {
+        if (!result) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
         }
         return teamId;
+    }
+
+    /**
+     * 搜索队伍
+     *
+     * @param teamQuery
+     * @return
+     */
+    @Override
+    public List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin) {
+        // 构造组合查询条件
+        QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
+        if (teamQuery != null) {
+            Long id = teamQuery.getId();
+            if (id != null && id > 0) {
+                queryWrapper.eq("id", id);
+            }
+            List<Long> idList = teamQuery.getIdList();
+            if (CollUtil.isNotEmpty(idList)) {
+                queryWrapper.in("id", idList);
+            }
+            String searchText = teamQuery.getSearchText();
+            // WHERE ... AND (name LIKE '%searchText%' OR description LIKE '%searchText%')
+            if (StringUtils.isNotBlank(searchText)) {
+                queryWrapper.and(qw -> qw
+                        .like("name", searchText)
+                        .or()
+                        .like("description", searchText)
+                );
+            }
+            String name = teamQuery.getName();
+            if (StringUtils.isNotBlank(name)) {
+                queryWrapper.like("name", name);
+            }
+            String description = teamQuery.getDescription();
+            if (StringUtils.isNotBlank(description)) {
+                queryWrapper.like("description", description);
+            }
+            Integer maxNum = teamQuery.getMaxNum();
+            // 查询最大人数相等的
+            if (maxNum != null && maxNum > 0) {
+                queryWrapper.eq("maxNum", maxNum);
+            }
+            Long userId = teamQuery.getUserId();
+            // 根据创建人来查询
+            if (userId != null && userId > 0) {
+                queryWrapper.eq("userId", userId);
+            }
+            // 根据状态来查询
+            Integer status = teamQuery.getStatus();
+            TeamStatusEnum statusEnum = TeamStatusEnum.getEnumByValue(status);
+            if (statusEnum == null) {
+                statusEnum = TeamStatusEnum.PUBLIC;
+            }
+            if (!isAdmin && statusEnum.equals(TeamStatusEnum.PRIVATE)) {
+                throw new BusinessException(ErrorCode.NO_AUTH, "权限不足");
+            }
+            queryWrapper.eq("status", statusEnum.getValue());
+        }
+        // 不展示已过期的队伍
+        // WHERE (expireTime > NOW() OR expireTime IS NULL)
+        queryWrapper.and(qw -> qw
+                .gt("expireTime", new Date())
+                .or()
+                .isNull("expireTime")
+        );
+        // 查询并返回
+        List<Team> teamList = this.list(queryWrapper);
+        if (CollUtil.isEmpty(teamList)) {
+            return new ArrayList<>();
+        }
+        List<TeamUserVO> teamUserVOList = new ArrayList<>();
+        // 关联查询创建人的用户信息
+        for (Team team : teamList) {
+            Long userId = team.getUserId();
+            if (userId == null) {
+                continue;
+            }
+            UserVO userVO = userService.getUserVO(userService.getById(userId));
+            TeamUserVO teamUserVO = getTeamUserVO(team);
+            teamUserVO.setCreateUser(userVO);
+            teamUserVOList.add(teamUserVO);
+        }
+        return teamUserVOList;
+    }
+
+    /**
+     * 获取脱敏队伍信息
+     * @param team
+     * @return
+     */
+    @Override
+    public TeamUserVO getTeamUserVO(Team team) {
+        if (team ==null){
+            return null;
+        }
+        TeamUserVO teamUserVO = new TeamUserVO();
+        BeanUtil.copyProperties(team, teamUserVO);
+        return teamUserVO;
     }
 }
 

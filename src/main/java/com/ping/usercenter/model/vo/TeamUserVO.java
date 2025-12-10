@@ -62,7 +62,7 @@ public class TeamUserVO implements Serializable {
     private Date updateTime;
 
     /**
-     * 入队用户列表
+     * 创建人用户信息
      */
-    List<UserVO> userList;
+    private UserVO createUser;
 }

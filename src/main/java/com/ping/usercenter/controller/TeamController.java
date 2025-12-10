@@ -10,6 +10,7 @@ import com.ping.usercenter.model.domain.Team;
 import com.ping.usercenter.model.domain.User;
 import com.ping.usercenter.model.dto.TeamQuery;
 import com.ping.usercenter.model.request.TeamAddRequest;
+import com.ping.usercenter.model.vo.TeamUserVO;
 import com.ping.usercenter.service.TeamService;
 import com.ping.usercenter.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -86,14 +87,12 @@ public class TeamController {
     }
 
     @GetMapping("/list")
-    public BaseResponse<List<Team>> listTeams(TeamQuery teamQuery) {
+    public BaseResponse<List<Team>> listTeams(TeamQuery teamQuery, HttpServletRequest request) {
         if (teamQuery == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        Team team = new Team();
-        BeanUtils.copyProperties(teamQuery, team);
-        QueryWrapper<Team> queryWrapper = new QueryWrapper<>(team);
-        List<Team> teamList = teamService.list(queryWrapper);
+        boolean isAdmin = userService.isAdmin(request);
+        List<TeamUserVO> teamList = teamService.listTeams(teamQuery, isAdmin);
         return ResultUtils.success(teamList);
     }
 

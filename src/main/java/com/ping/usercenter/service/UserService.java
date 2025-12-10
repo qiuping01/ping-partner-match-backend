@@ -2,6 +2,7 @@ package com.ping.usercenter.service;
 
 import com.ping.usercenter.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.ping.usercenter.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -98,6 +99,20 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean isAdmin(User loginUser);
+
+    /**
+     * 获取脱敏用户
+     * @param user
+     * @return
+     */
+    UserVO getUserVO(User user);
+
+    /**
+     * 获取脱敏用户列表
+     * @param userList
+     * @return
+     */
+    List<UserVO> getUserVoList(List<User> userList);
 }
 
 
