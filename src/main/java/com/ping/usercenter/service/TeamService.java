@@ -4,9 +4,11 @@ import com.ping.usercenter.model.domain.Team;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.ping.usercenter.model.domain.User;
 import com.ping.usercenter.model.dto.TeamQuery;
+import com.ping.usercenter.model.request.TeamUpdateRequest;
 import com.ping.usercenter.model.vo.TeamUserVO;
 import com.ping.usercenter.model.vo.UserVO;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -40,4 +42,11 @@ public interface TeamService extends IService<Team> {
      */
     TeamUserVO getTeamUserVO(Team team);
 
+    /**
+     * 更新队伍信息
+     * @param teamUpdateRequest
+     * @return
+     */
+    boolean updateTeam(TeamUpdateRequest teamUpdateRequest,
+                       User loginUser);
 }

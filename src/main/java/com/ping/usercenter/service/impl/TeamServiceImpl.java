@@ -1,5 +1,7 @@
 package com.ping.usercenter.service.impl;
 
+import java.util.Date;
+
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -11,6 +13,7 @@ import com.ping.usercenter.model.domain.User;
 import com.ping.usercenter.model.domain.UserTeam;
 import com.ping.usercenter.model.dto.TeamQuery;
 import com.ping.usercenter.model.enums.TeamStatusEnum;
+import com.ping.usercenter.model.request.TeamUpdateRequest;
 import com.ping.usercenter.model.vo.TeamUserVO;
 import com.ping.usercenter.model.vo.UserVO;
 import com.ping.usercenter.service.TeamService;
@@ -23,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,6 +44,9 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private TeamMapper teamMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class) // 开启事务 出问题抛异常
@@ -203,17 +210,75 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     /**
      * 获取脱敏队伍信息
+     *
      * @param team
      * @return
      */
     @Override
     public TeamUserVO getTeamUserVO(Team team) {
-        if (team ==null){
+        if (team == null) {
             return null;
         }
         TeamUserVO teamUserVO = new TeamUserVO();
         BeanUtil.copyProperties(team, teamUserVO);
         return teamUserVO;
+    }
+
+    /**
+     * 更新队伍信息
+     *
+     * @param teamUpdateRequest
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public boolean updateTeam(TeamUpdateRequest teamUpdateRequest, User loginUser) {
+        if (teamUpdateRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long teamId = teamUpdateRequest.getId();
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍ID不能为空");
+        }
+        Team oldTeam = this.getById(teamId);
+        if (oldTeam == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");
+        }
+        Long loginUserId = loginUser.getId();
+        if (loginUserId == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
+        }
+        // 校验权限 - 只有管理员或创建者可以修改
+        if (!userService.isAdmin(loginUser) && !oldTeam.getUserId().equals(loginUserId)) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        // 状态校验（应该在获取枚举之前）
+        Integer status = teamUpdateRequest.getStatus();
+        if (status != null) {
+            TeamStatusEnum statusEnum = TeamStatusEnum.getEnumByValue(status);
+            if (statusEnum == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍状态不合法");
+            }
+
+            //  加密状态校验（只有状态有效才进行）
+            if (TeamStatusEnum.ENCRYPT.equals(statusEnum)) {
+                // 如果传了密码，就不能为空
+                if (teamUpdateRequest.getPassword() != null &&
+                        StringUtils.isBlank(teamUpdateRequest.getPassword())) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能为空");
+                }
+
+                // 如果原来是公开队伍，现在要改为加密，必须有密码
+                if (oldTeam.getStatus() != TeamStatusEnum.ENCRYPT.getValue() &&
+                        StringUtils.isBlank(teamUpdateRequest.getPassword())) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "改为加密队伍必须设置密码");
+                }
+            }
+        }
+        // 创建更新对象（只设置要更新的字段）
+        Team updateTeam = new Team();
+        BeanUtil.copyProperties(teamUpdateRequest, updateTeam);
+        return this.updateById(updateTeam);
     }
 }
 
