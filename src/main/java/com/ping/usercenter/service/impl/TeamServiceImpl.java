@@ -234,6 +234,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
      */
     @Override
     public boolean updateTeam(TeamUpdateRequest teamUpdateRequest, User loginUser) {
+        // 1. 基础参数校验
         if (teamUpdateRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -241,6 +242,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (teamId == null || teamId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍ID不能为空");
         }
+        // 2. 校验队伍是否存在
         Team oldTeam = this.getById(teamId);
         if (oldTeam == null) {
             throw new BusinessException(ErrorCode.NULL_ERROR, "队伍不存在");
@@ -249,61 +251,95 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (loginUserId == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN);
         }
-        // 校验权限 - 只有管理员或创建者可以修改
+        // 3. 校验权限 - 只有管理员或创建者可以修改
         if (!userService.isAdmin(loginUser) && !oldTeam.getUserId().equals(loginUserId)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
-        // 状态校验（应该在获取枚举之前）
-        Integer status = teamUpdateRequest.getStatus();
-        if (status != null) {
-            TeamStatusEnum statusEnum = TeamStatusEnum.getEnumByValue(status);
-            if (statusEnum == null) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍状态不合法");
-            }
 
-            //  加密状态校验（只有状态有效才进行）
-            if (TeamStatusEnum.ENCRYPT.equals(statusEnum)) {
-                // 如果传了密码，就不能为空
-                if (StringUtils.isBlank(teamUpdateRequest.getPassword())) {
-                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能为空");
-                }
-
-                // 如果原来是公开队伍，现在要改为加密，必须有密码
-                if (oldTeam.getStatus() != TeamStatusEnum.ENCRYPT.getValue() &&
-                        StringUtils.isBlank(teamUpdateRequest.getPassword())) {
-                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "改为加密队伍必须设置密码");
-                }
-            }
-        }
-        // 使用 UpdateWrapper 动态构建更新
+        // 4. 使用 UpdateWrapper 动态构建更新
         UpdateWrapper<Team> updateTeam = new UpdateWrapper<>();
         updateTeam.eq("id", teamId);
+        boolean hasUpdate = false;
+        // 5. 处理名称
         if (teamUpdateRequest.getName() != null) {
             if (StringUtils.isNotBlank(teamUpdateRequest.getName())) {
                 updateTeam.set("name", teamUpdateRequest.getName());
+                hasUpdate = true;
             }
         }
+        // 6. 处理描述
         if (teamUpdateRequest.getDescription() != null) {
             if (StringUtils.isNotBlank(teamUpdateRequest.getDescription())) {
                 updateTeam.set("description", teamUpdateRequest.getDescription());
+                hasUpdate = true;
             }
         }
+        // 7. 处理过期时间
         if (teamUpdateRequest.getExpireTime() != null) {
             if (teamUpdateRequest.getExpireTime().getTime() > System.currentTimeMillis()) {
                 updateTeam.set("expireTime", teamUpdateRequest.getExpireTime());
+                hasUpdate = true;
             }
         }
-        if (teamUpdateRequest.getStatus() != null) {
-            if (TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus())
-                    .equals(TeamStatusEnum.ENCRYPT)) {
-                updateTeam.set("password", teamUpdateRequest.getPassword());
+        // 8. 处理状态和密码（重点逻辑！！！）
+        Integer newTeamStatus = teamUpdateRequest.getStatus();
+        Integer oldTeamStatus = oldTeam.getStatus();
+        String newTeamPassword = teamUpdateRequest.getPassword();
+        // 有状态值
+        if (newTeamStatus != null) {
+            // 8.1 状态值校验
+            TeamStatusEnum newStatusEnum = TeamStatusEnum.getEnumByValue(newTeamStatus);
+            if (newStatusEnum == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍状态不合法");
+            }
+            if (!TeamStatusEnum.getEnumByValue(oldTeamStatus).equals(TeamStatusEnum.getEnumByValue(newTeamStatus))) {
+                updateTeam.set("status", newTeamStatus);
+                hasUpdate = true;
+            }
+            // 8.2 加密状态特殊处理
+            if (TeamStatusEnum.ENCRYPT.equals(newStatusEnum)) {
+                // 情况A：从非加密改为加密 → 必须提供密码
+                if (oldTeamStatus != TeamStatusEnum.ENCRYPT.getValue()) {
+                    if (StringUtils.isBlank(newTeamPassword)) {
+                        throw new BusinessException(ErrorCode.PARAMS_ERROR, "加密状态必须提供密码");
+                    }
+                    updateTeam.set("password", newTeamPassword);
+                }
+                // 情况B：保持加密状态，传了新密码 → 更新密码
+                else if (newTeamPassword != null) {
+                    if (StringUtils.isBlank(newTeamPassword)) {
+                        throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能为空");
+                    }
+                    if (!newTeamPassword.equals(oldTeam.getPassword())) {
+                        updateTeam.set("password", newTeamPassword);
+                        hasUpdate = true;
+                    }
+                }
+                // 情况C：保持加密状态，没传密码 → 不用更新密码
+
+            }
+            // 8.3 从加密改为非加密 → 清空密码
+            else if (TeamStatusEnum.ENCRYPT.equals(TeamStatusEnum.getEnumByValue(oldTeamStatus))) {
+                updateTeam.set("password", "");
             }
         }
-        if (teamUpdateRequest.getPassword() != null) {
-            if (StringUtils.isNotBlank(teamUpdateRequest.getPassword())) {
-                updateTeam.set("password", teamUpdateRequest.getPassword());
+        // 9. 只更新密码（不更新状态）
+        else if (newTeamPassword != null) {
+            // 只有加密队伍才能更新密码
+            if (oldTeamStatus != TeamStatusEnum.ENCRYPT.getValue()) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "只有加密队伍才能更新密码");
             }
+            if (StringUtils.isBlank(newTeamPassword)) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能为空");
+            }
+            updateTeam.set("password", newTeamPassword);
+            hasUpdate = true;
         }
+        // 10. 检查是否有更新
+        if (!hasUpdate) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "没有更新内容");
+        }
+
         return this.update(updateTeam);
     }
 }
