@@ -5,6 +5,7 @@ import java.util.Date;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ping.usercenter.common.ErrorCode;
 import com.ping.usercenter.exception.BusinessException;
@@ -263,8 +264,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             //  加密状态校验（只有状态有效才进行）
             if (TeamStatusEnum.ENCRYPT.equals(statusEnum)) {
                 // 如果传了密码，就不能为空
-                if (teamUpdateRequest.getPassword() != null &&
-                        StringUtils.isBlank(teamUpdateRequest.getPassword())) {
+                if (StringUtils.isBlank(teamUpdateRequest.getPassword())) {
                     throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能为空");
                 }
 
@@ -275,13 +275,38 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 }
             }
         }
-        // 创建更新对象（只设置要更新的字段）
-        Team updateTeam = new Team();
-        BeanUtil.copyProperties(teamUpdateRequest, updateTeam);
-        return this.updateById(updateTeam);
+        // 使用 UpdateWrapper 动态构建更新
+        UpdateWrapper<Team> updateTeam = new UpdateWrapper<>();
+        updateTeam.eq("id", teamId);
+        if (teamUpdateRequest.getName() != null) {
+            if (StringUtils.isNotBlank(teamUpdateRequest.getName())) {
+                updateTeam.set("name", teamUpdateRequest.getName());
+            }
+        }
+        if (teamUpdateRequest.getDescription() != null) {
+            if (StringUtils.isNotBlank(teamUpdateRequest.getDescription())) {
+                updateTeam.set("description", teamUpdateRequest.getDescription());
+            }
+        }
+        if (teamUpdateRequest.getExpireTime() != null) {
+            if (teamUpdateRequest.getExpireTime().getTime() > System.currentTimeMillis()) {
+                updateTeam.set("expireTime", teamUpdateRequest.getExpireTime());
+            }
+        }
+        if (teamUpdateRequest.getStatus() != null) {
+            if (TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus())
+                    .equals(TeamStatusEnum.ENCRYPT)) {
+                updateTeam.set("password", teamUpdateRequest.getPassword());
+            }
+        }
+        if (teamUpdateRequest.getPassword() != null) {
+            if (StringUtils.isNotBlank(teamUpdateRequest.getPassword())) {
+                updateTeam.set("password", teamUpdateRequest.getPassword());
+            }
+        }
+        return this.update(updateTeam);
     }
 }
-
 
 
 
