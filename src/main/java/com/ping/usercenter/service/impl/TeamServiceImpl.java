@@ -1,5 +1,7 @@
 package com.ping.usercenter.service.impl;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -263,24 +265,37 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         // 5. 处理名称
         if (teamUpdateRequest.getName() != null) {
             if (StringUtils.isNotBlank(teamUpdateRequest.getName())) {
-                updateTeam.set("name", teamUpdateRequest.getName());
-                hasUpdate = true;
+                if (!oldTeam.getName().equals(teamUpdateRequest.getName())) {
+                    updateTeam.set("name", teamUpdateRequest.getName());
+                    hasUpdate = true;
+                }
             }
         }
         // 6. 处理描述
         if (teamUpdateRequest.getDescription() != null) {
             if (StringUtils.isNotBlank(teamUpdateRequest.getDescription())) {
-                updateTeam.set("description", teamUpdateRequest.getDescription());
-                hasUpdate = true;
+                if (!oldTeam.getDescription().equals(teamUpdateRequest.getDescription())) {
+                    updateTeam.set("description", teamUpdateRequest.getDescription());
+                    hasUpdate = true;
+                }
             }
         }
         // 7. 处理过期时间
         if (teamUpdateRequest.getExpireTime() != null) {
             if (teamUpdateRequest.getExpireTime().getTime() > System.currentTimeMillis()) {
-                updateTeam.set("expireTime", teamUpdateRequest.getExpireTime());
-                hasUpdate = true;
+                Date newExpireTime = teamUpdateRequest.getExpireTime();
+                Date oldExpireTime = oldTeam.getExpireTime();
+                // 将时间都转换为秒级精度进行比较
+                long newExpireTimeSeconds = newExpireTime.getTime() / 1000;
+                long oldExpireTimeSeconds = oldExpireTime.getTime() / 1000;
+                boolean isTimeChanged = newExpireTimeSeconds != oldExpireTimeSeconds;
+                if (isTimeChanged) {
+                    updateTeam.set("expireTime", teamUpdateRequest.getExpireTime());
+                    hasUpdate = true;
+                }
             }
         }
+
         // 8. 处理状态和密码（重点逻辑！！！）
         Integer newTeamStatus = teamUpdateRequest.getStatus();
         Integer oldTeamStatus = oldTeam.getStatus();
