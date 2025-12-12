@@ -11,6 +11,7 @@ import com.ping.usercenter.model.domain.Team;
 import com.ping.usercenter.model.domain.User;
 import com.ping.usercenter.model.dto.TeamQuery;
 import com.ping.usercenter.model.request.TeamAddRequest;
+import com.ping.usercenter.model.request.TeamJoinRequest;
 import com.ping.usercenter.model.request.TeamUpdateRequest;
 import com.ping.usercenter.model.vo.TeamUserVO;
 import com.ping.usercenter.service.TeamService;
@@ -113,4 +114,21 @@ public class TeamController {
         Page<Team> teamPage = teamService.page(new Page<>(pageNum, pageSize), queryWrapper);
         return ResultUtils.success(teamPage);
     }
+
+    /**
+     * 用户加入队伍
+     */
+    @PostMapping("/join")
+    public BaseResponse<Boolean> joinTeam(@RequestBody TeamJoinRequest teamJoinRequest,
+                                          HttpServletRequest request) {
+        if (teamJoinRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long teamId = teamJoinRequest.getTeamId();
+        String teamPassword = teamJoinRequest.getPassword();
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.joinTeam(teamId, teamPassword, loginUser);
+        return ResultUtils.success(result);
+    }
+
 }

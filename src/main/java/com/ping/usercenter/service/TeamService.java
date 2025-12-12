@@ -49,4 +49,14 @@ public interface TeamService extends IService<Team> {
      */
     boolean updateTeam(TeamUpdateRequest teamUpdateRequest,
                        User loginUser);
+
+    /**
+     * 加入队伍
+     *
+     * @param teamId
+     * @param teamPassword
+     * @param loginUser
+     * @return
+     */
+    boolean joinTeam(Long teamId, String teamPassword, User loginUser);
 }
