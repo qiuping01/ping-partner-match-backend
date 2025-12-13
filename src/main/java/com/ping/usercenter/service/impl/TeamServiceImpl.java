@@ -426,7 +426,77 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         userTeam.setJoinTime(new Date());
         return userTeamService.save(userTeam);
     }
+
+    /**
+     * 用户退出队伍
+     *
+     * @param teamId    队伍 id
+     * @param loginUser 登录用户
+     * @return 退出结果
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean quitTeam(Long teamId, User loginUser) {
+        // 1. 校验参数
+        if (teamId == null || loginUser == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 2. 校验队伍
+        // 队伍不存在
+        Team team = this.getById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍不存在");
+        }
+        // 查询用户是否在队伍中
+        // SELECT * FROM user_team WHERE team_id = #{teamId} AND user_id = #{userId}
+        UserTeam queryUserTeam = new UserTeam();
+        queryUserTeam.setTeamId(teamId);
+        queryUserTeam.setUserId(loginUser.getId());
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>(queryUserTeam);
+        long count = userTeamService.count(userTeamQueryWrapper);
+        if (count == 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "未加入队伍");
+        }
+        // 队伍人数
+        QueryWrapper<UserTeam> hasJoinUserCountWrapper = new QueryWrapper<>();
+        hasJoinUserCountWrapper.eq("teamId", teamId);
+        long teamHasUserCount = userTeamService.count(hasJoinUserCountWrapper);
+
+        // 3. 处理退出
+        // 3.1 只剩一人，队伍解散
+        if (teamHasUserCount == 1) {
+            this.removeById(teamId);
+        } else {
+            // 3.2 多人，退出队伍，队长权限顺位转移
+            // 情况A：退出用户是队长，顺位转移
+            Long currentUserId = loginUser.getId();
+            Long teamCreatorId = team.getUserId();
+            if (currentUserId.equals(teamCreatorId)) {
+                // a. 查询已加入队伍的所有用户和加入时间
+                QueryWrapper<UserTeam> userTeam = new QueryWrapper<>();
+                userTeam.eq("teamId", teamId);
+                userTeam.last("order by id asc limit 2");
+                List<UserTeam> userTeamList = userTeamService.list(userTeam);
+                if (CollUtil.isEmpty(userTeamList) || userTeamList.size() <= 1) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍人数不足");
+                }
+                // b. 顺位转移
+                UserTeam nextUserTeam = userTeamList.get(1);
+                Long nextTeamLeaderId = nextUserTeam.getUserId();
+                Team updateTeam = new Team();
+                updateTeam.setId(teamId);
+                updateTeam.setUserId(nextTeamLeaderId);
+                boolean result = this.updateById(updateTeam);
+                if (!result) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "队伍顺位转移失败");
+                }
+            }
+        }
+        // 移除关系
+        return userTeamService.remove(userTeamQueryWrapper);
+    }
 }
+
 
 
 

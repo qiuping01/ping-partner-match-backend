@@ -12,6 +12,7 @@ import com.ping.usercenter.model.domain.User;
 import com.ping.usercenter.model.dto.TeamQuery;
 import com.ping.usercenter.model.request.TeamAddRequest;
 import com.ping.usercenter.model.request.TeamJoinRequest;
+import com.ping.usercenter.model.request.TeamQuitRequest;
 import com.ping.usercenter.model.request.TeamUpdateRequest;
 import com.ping.usercenter.model.vo.TeamUserVO;
 import com.ping.usercenter.service.TeamService;
@@ -131,4 +132,20 @@ public class TeamController {
         return ResultUtils.success(result);
     }
 
+    /**
+     * 用户退出队伍
+     */
+    @PostMapping("/quit")
+    public BaseResponse<Boolean> quitTeam(@RequestBody TeamQuitRequest teamQuitRequest,
+                                          HttpServletRequest request) {
+        if (teamQuitRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long teamId = teamQuitRequest.getTeamId();
+        if (teamId == null || teamId <= 0)
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.quitTeam(teamId, loginUser);
+        return ResultUtils.success(result);
+    }
 }
