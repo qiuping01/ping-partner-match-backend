@@ -59,4 +59,13 @@ public interface TeamService extends IService<Team> {
      * @return
      */
     boolean joinTeam(Long teamId, String teamPassword, User loginUser);
+
+    /**
+     * 用户退出队伍
+     *
+     * @param teamId 队伍 id
+     * @param loginUser 登录用户
+     * @return 退出结果
+     */
+    boolean quitTeam(Long teamId, User loginUser);
 }

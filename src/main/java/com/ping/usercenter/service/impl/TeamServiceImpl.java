@@ -426,6 +426,56 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         userTeam.setJoinTime(new Date());
         return userTeamService.save(userTeam);
     }
+
+    /**
+     * 用户退出队伍
+     *
+     * @param teamId 队伍 id
+     * @param loginUser 登录用户
+     * @return 退出结果
+     */
+    @Override
+    public boolean quitTeam(Long teamId, User loginUser) {
+        // 1. 校验参数
+        if (teamId == null || loginUser == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 2. 校验队伍是否存在
+        Team team = this.getById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍不存在");
+        }
+        // 3. 处理退出
+        // 3.1 只剩一人，队伍解散
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId);
+        long teamHasUserCount = userTeamService.count(userTeamQueryWrapper);
+        if (teamHasUserCount == 1) {
+            this.removeById(teamId);
+            return true;
+        }
+        // 3.2 多人，退出队伍，队长权限顺位转移
+        Long currentUserId = loginUser.getId();
+        Long teamCreatorId = team.getUserId();
+        // 3.2.1 校验是否为队长
+        if (!currentUserId.equals(teamCreatorId)) {
+            QueryWrapper<UserTeam> userTeam = new QueryWrapper<>();
+            userTeam.eq("teamId", teamId);
+            userTeam.eq("userId", currentUserId);
+            userTeamService.remove(userTeam);
+        }
+        // 3.2.2 顺位转移
+        if(currentUserId.equals(teamCreatorId) && teamHasUserCount > 1) {
+            QueryWrapper<UserTeam> userTeam = new QueryWrapper<>();
+            userTeam.eq("teamId", teamId);
+            userTeam.orderByAsc("joinTime");
+            userTeam.last("limit 1");
+            UserTeam userTeamUpdate = userTeamService.getOne(userTeam);
+            team.setUserId(userTeamUpdate.getUserId());
+            this.updateById(team);
+            }
+        return true;
+    }
 }
 
 
