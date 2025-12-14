@@ -6,7 +6,6 @@ import com.ping.usercenter.common.BaseResponse;
 import com.ping.usercenter.common.ErrorCode;
 import com.ping.usercenter.common.ResultUtils;
 import com.ping.usercenter.exception.BusinessException;
-import com.ping.usercenter.mapper.TeamMapper;
 import com.ping.usercenter.model.domain.Team;
 import com.ping.usercenter.model.domain.User;
 import com.ping.usercenter.model.dto.TeamQuery;
@@ -19,7 +18,6 @@ import com.ping.usercenter.service.TeamService;
 import com.ping.usercenter.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.BeansException;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -52,18 +50,6 @@ public class TeamController {
         BeanUtils.copyProperties(teamAddRequest, team);
         long teamId = teamService.addTeam(team, loginUser);
         return ResultUtils.success(teamId);
-    }
-
-    @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteTeam(@RequestBody long id) {
-        if (id <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        boolean b = teamService.removeById(id);
-        if (!b) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除失败");
-        }
-        return ResultUtils.success(true);
     }
 
     @PostMapping("/update")
@@ -147,5 +133,22 @@ public class TeamController {
         User loginUser = userService.getLoginUser(request);
         boolean result = teamService.quitTeam(teamId, loginUser);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 队长解散队伍
+     */
+    @PostMapping("/delete")
+    public BaseResponse<Boolean> dismissTeam(@RequestBody long teamId,
+                                             HttpServletRequest request) {
+        if (teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean result = teamService.dismissTeam(teamId,loginUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "解散失败");
+        }
+        return ResultUtils.success(true);
     }
 }

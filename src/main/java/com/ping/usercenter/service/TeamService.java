@@ -29,6 +29,7 @@ public interface TeamService extends IService<Team> {
 
     /**
      * 搜索队伍
+     *
      * @param teamQuery
      * @param isAdmin
      * @return
@@ -37,6 +38,7 @@ public interface TeamService extends IService<Team> {
 
     /**
      * 获取脱敏队伍信息
+     *
      * @param team
      * @return
      */
@@ -44,6 +46,7 @@ public interface TeamService extends IService<Team> {
 
     /**
      * 更新队伍信息
+     *
      * @param teamUpdateRequest
      * @return
      */
@@ -63,9 +66,17 @@ public interface TeamService extends IService<Team> {
     /**
      * 用户退出队伍
      *
-     * @param teamId 队伍 id
+     * @param teamId    队伍 id
      * @param loginUser 登录用户
      * @return 退出结果
      */
     boolean quitTeam(Long teamId, User loginUser);
+
+    /**
+     * 解散队伍
+     *
+     * @param loginUser 登录用户
+     * @return 解散结果
+     */
+    boolean dismissTeam(long teamId, User loginUser);
 }
