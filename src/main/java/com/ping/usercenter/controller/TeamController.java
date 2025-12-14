@@ -3,6 +3,7 @@ package com.ping.usercenter.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ping.usercenter.common.BaseResponse;
+import com.ping.usercenter.common.DeleteRequest;
 import com.ping.usercenter.common.ErrorCode;
 import com.ping.usercenter.common.ResultUtils;
 import com.ping.usercenter.exception.BusinessException;
@@ -147,13 +148,13 @@ public class TeamController {
      * 队长解散队伍
      */
     @PostMapping("/delete")
-    public BaseResponse<Boolean> dismissTeam(@RequestBody long teamId,
+    public BaseResponse<Boolean> dismissTeam(@RequestBody DeleteRequest deleteRequest,
                                              HttpServletRequest request) {
-        if (teamId <= 0) {
+        if (deleteRequest.getId() <= 0 || deleteRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);
-        boolean result = teamService.dismissTeam(teamId, loginUser);
+        boolean result = teamService.dismissTeam(deleteRequest.getId(), loginUser);
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "解散失败");
         }
