@@ -8,6 +8,7 @@ import com.ping.usercenter.common.ResultUtils;
 import com.ping.usercenter.exception.BusinessException;
 import com.ping.usercenter.model.domain.Team;
 import com.ping.usercenter.model.domain.User;
+import com.ping.usercenter.model.domain.UserTeam;
 import com.ping.usercenter.model.dto.TeamQuery;
 import com.ping.usercenter.model.request.TeamAddRequest;
 import com.ping.usercenter.model.request.TeamJoinRequest;
@@ -16,13 +17,17 @@ import com.ping.usercenter.model.request.TeamUpdateRequest;
 import com.ping.usercenter.model.vo.TeamUserVO;
 import com.ping.usercenter.service.TeamService;
 import com.ping.usercenter.service.UserService;
+import com.ping.usercenter.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 队伍接口
@@ -39,6 +44,9 @@ public class TeamController {
 
     @Resource
     private TeamService teamService;
+
+    @Resource
+    private UserTeamService userTeamService;
 
     @PostMapping("/add")
     public BaseResponse<Long> addTeam(@RequestBody TeamAddRequest teamAddRequest, HttpServletRequest request) {
@@ -145,10 +153,34 @@ public class TeamController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);
-        boolean result = teamService.dismissTeam(teamId,loginUser);
+        boolean result = teamService.dismissTeam(teamId, loginUser);
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "解散失败");
         }
         return ResultUtils.success(true);
+    }
+
+    /**
+     * 获取我加入的队伍
+     */
+    @GetMapping("/list/my/join")
+    public BaseResponse<List<TeamUserVO>> listMyJoinTeams(TeamQuery teamQuery
+            , HttpServletRequest request) {
+        if (teamQuery == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        long userId = loginUser.getId();
+        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        List<UserTeam> userTeams = userTeamService.list(queryWrapper);
+        // 过滤重复id - 因为重复的teamId是同一个队伍
+        Map<Long, List<UserTeam>> listMap = userTeams
+                .stream()
+                .collect(Collectors.groupingBy(UserTeam::getTeamId));
+        List<Long> idList = new ArrayList<>(listMap.keySet());
+        teamQuery.setIdList(idList);
+        List<TeamUserVO> teamList = teamService.listTeams(teamQuery, true);
+        return ResultUtils.success(teamList);
     }
 }
