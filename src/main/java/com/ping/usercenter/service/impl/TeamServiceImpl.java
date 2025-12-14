@@ -366,6 +366,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
      * @param loginUser
      * @return
      */
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public boolean joinTeam(Long teamId, String teamPassword, User loginUser) {
         // 无需查库的校验逻辑前置
