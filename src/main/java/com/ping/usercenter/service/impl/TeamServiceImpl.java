@@ -48,9 +48,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     @Resource
     private UserService userService;
 
-    @Resource
-    private TeamMapper teamMapper;
-
     @Override
     @Transactional(rollbackFor = Exception.class) // 开启事务 出问题抛异常
     public long addTeam(Team team, User loginUser) {
@@ -95,7 +92,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
         //  3.6. 超时时间 > 当前时间
         Date expireTime = team.getExpireTime();
-        if (new Date().before(expireTime)) {
+        if (expireTime.before(new Date())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "超时时间 > 当前时间");
         }
         //  3.7. 校验用户最多创建 5 个队伍
