@@ -1,14 +1,19 @@
 package com.ping.usercenter.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.ping.usercenter.common.ErrorCode;
 import com.ping.usercenter.exception.BusinessException;
 import com.ping.usercenter.model.domain.User;
 import com.ping.usercenter.model.vo.UserVO;
 import com.ping.usercenter.service.UserService;
 import com.ping.usercenter.mapper.UserMapper;
+import com.ping.usercenter.utils.AlgorithmUtils;
+import javafx.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -19,7 +24,9 @@ import org.springframework.util.DigestUtils;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -211,7 +218,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         for (String tagName : tagNameList) {
             // 方法1：使用 like（当前方案）- “tagName” 精确匹配
-           queryWrapper = queryWrapper.like("tags", "\"" + tagName + "\"");
+            queryWrapper = queryWrapper.like("tags", "\"" + tagName + "\"");
 
         }
 
@@ -327,6 +334,69 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 根据标签匹配用户
+     *
+     * @param num 匹配用户数量
+     * @param loginUser 登录用户
+     * @return 匹配的用户列表
+     */
+    @Override
+    public List<User> userMatch(long num, User loginUser) {
+        // 只取 id 和 标签且标签不为空
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select("id", "tags");
+        queryWrapper.isNotNull("tags");
+        List<User> userList = this.list(queryWrapper);
+
+        //
+        String tags = loginUser.getTags();
+        Gson gson = new Gson();
+        // tags 的 String 转为 List<String>
+        List<String> tagList = gson.fromJson(tags, new TypeToken<List<String>>() {
+        }.getType());
+
+        // 用户列表的下标 => 相似度
+        List<Pair<User, Long>> list = new ArrayList<>(); // Pair 存一对键值
+
+        // 依次计算所有用户和当前用户的相似度
+        for (int i = 0; i < userList.size(); i++) {
+            User user = userList.get(i);
+            String userTags = user.getTags();
+            // 无标签或者为当前用户自己
+            if (StringUtils.isBlank(userTags) || user.getId() == loginUser.getId()) {
+                continue;
+            }
+            List<String> userTagList = gson.fromJson(userTags, new TypeToken<List<String>>() {
+            }.getType());
+            // 计算分数
+            long distance = AlgorithmUtils.minDistance(tagList, userTagList);
+            list.add(new Pair<>(user, distance));
+        }
+
+        // 按编辑距离由小到大排序
+        List<Pair<User, Long>> topUserPairList = list.stream()
+                .sorted((a, b) -> (int) (a.getValue() - b.getValue()))
+                .limit(num)
+                .collect(Collectors.toList());
+
+        // 原本顺序的 userId 列表
+        List<Long> userIdList = topUserPairList.stream().map(pair -> pair.getKey().getId()).collect(Collectors.toList());
+
+        // 补充完整用户信息
+        QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.in("id", userIdList);
+        // 脱敏并标识用户 1->user1
+        Map<Long, List<User>> userIdUserListMap = this.list(userQueryWrapper)
+                .stream()
+                .map(user -> getSafetyUser(user))
+                .collect(Collectors.groupingBy(User::getId));
+        List<User> finalUserList = new ArrayList<>();
+        for (Long userId : userIdList) {
+            finalUserList.add(userIdUserListMap.get(userId).get(0));
+        }
+        return finalUserList;
+    }
 }
 
 

@@ -9,6 +9,7 @@ import com.ping.usercenter.exception.BusinessException;
 import com.ping.usercenter.model.domain.User;
 import com.ping.usercenter.model.request.UserLoginRequest;
 import com.ping.usercenter.model.request.UserRegisterRequest;
+import com.ping.usercenter.model.vo.UserVO;
 import com.ping.usercenter.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -131,21 +132,22 @@ public class UserController {
         return ResultUtils.success(userList);
     }
 
+    // todo 推荐多个，未实现
     @GetMapping("/recommend")
     public BaseResponse<Page<User>> recommendUsers(long pageNum, long pageSize
-                                                   , HttpServletRequest request) {
+            , HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         String redisKey = String.format("partner-match:user:recommend:%s"
                 , loginUser.getId());
         ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
         // 如果有缓存，直接读缓存
-        Page<User> userPage =(Page<User>) valueOperations.get(redisKey);
+        Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
         if (userPage != null) {
             return ResultUtils.success(userPage);
         }
         // 无缓存，查数据库
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        userPage = userService.page(new Page<>(pageNum,pageSize), queryWrapper);
+        userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
         // 写缓存
         try {
             // 30s 过期
@@ -187,4 +189,21 @@ public class UserController {
         return ResultUtils.success(b);
     }
 
+    /**
+     * 获取最匹配的用户
+     *
+     * @param num
+     * @param request
+     * @return
+     */
+    @GetMapping("/match")
+    public BaseResponse<List<User>> userMatch(long num,
+                                                HttpServletRequest request) {
+        if (num <= 0 || num > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        List<User> userVOList = userService.userMatch(num, loginUser);
+        return ResultUtils.success(userVOList);
+    }
 }
