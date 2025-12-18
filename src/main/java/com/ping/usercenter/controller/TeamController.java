@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -94,6 +95,32 @@ public class TeamController {
         }
         boolean isAdmin = userService.isAdmin(request);
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery, isAdmin);
+
+        // 判断当前用户是否已加入队伍 -  便于前端展示是否加入队伍
+        // 提取队伍 ID 列表
+        List<Long> teamIdList = teamList.stream()
+                .map(TeamUserVO::getId)
+                .collect(Collectors.toList());
+        // 查询当前用户加入了哪些队伍
+        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
+        try {
+            User loginUser = userService.getLoginUser(request);
+            queryWrapper.in("teamId", teamIdList);
+            queryWrapper.eq("userId", loginUser.getId());
+            List<UserTeam> userTeamList = userTeamService.list(queryWrapper);
+
+            // 已加入的队伍 id 集合
+            Set<Long> hasJoinTeamIdList = userTeamList.stream()
+                    .map(UserTeam::getTeamId)
+                    .collect(Collectors.toSet());
+            // 标记每个队伍
+            teamList.forEach(team -> {
+                boolean hasJoin = hasJoinTeamIdList.contains(team.getId());
+                team.setHasJoin(hasJoin);
+            });
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         return ResultUtils.success(teamList);
     }
 
@@ -160,8 +187,8 @@ public class TeamController {
         }
         return ResultUtils.success(true);
     }
-  
-      /**
+
+    /**
      * 获取我创建的队伍
      */
     @GetMapping("/list/my/create")
@@ -176,8 +203,8 @@ public class TeamController {
         return ResultUtils.success(teamList);
 
     }
-  
-      /**
+
+    /**
      * 获取我加入的队伍
      */
     @GetMapping("/list/my/join")
