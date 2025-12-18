@@ -197,13 +197,13 @@ public class UserController {
      * @return
      */
     @GetMapping("/match")
-    public BaseResponse<List<User>> userMatch(long num,
+    public BaseResponse<List<UserVO>> userMatch(long num,
                                                 HttpServletRequest request) {
         if (num <= 0 || num > 20) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userService.getLoginUser(request);
-        List<User> userVOList = userService.userMatch(num, loginUser);
+        List<UserVO> userVOList = userService.userMatch(num, loginUser);
         return ResultUtils.success(userVOList);
     }
 }

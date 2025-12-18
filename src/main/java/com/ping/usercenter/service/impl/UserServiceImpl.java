@@ -337,31 +337,40 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     /**
      * 根据标签匹配用户
      *
-     * @param num 匹配用户数量
+     * @param num       匹配用户数量
      * @param loginUser 登录用户
      * @return 匹配的用户列表
      */
     @Override
-    public List<User> userMatch(long num, User loginUser) {
+    public List<UserVO> userMatch(long num, User loginUser) {
+        if (num <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "匹配数量必须大于0");
+        }
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在");
+        }
+
         // 只取 id 和 标签且标签不为空
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.select("id", "tags");
         queryWrapper.isNotNull("tags");
+        queryWrapper.ne("id", loginUser.getId());  // 提前排除自己
         List<User> userList = this.list(queryWrapper);
 
-        //
         String tags = loginUser.getTags();
         Gson gson = new Gson();
         // tags 的 String 转为 List<String>
         List<String> tagList = gson.fromJson(tags, new TypeToken<List<String>>() {
         }.getType());
+        if (tagList == null || tagList.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户标签为空");
+        }
 
         // 用户列表的下标 => 相似度
         List<Pair<User, Long>> list = new ArrayList<>(); // Pair 存一对键值
 
         // 依次计算所有用户和当前用户的相似度
-        for (int i = 0; i < userList.size(); i++) {
-            User user = userList.get(i);
+        for (User user : userList) {
             String userTags = user.getTags();
             // 无标签或者为当前用户自己
             if (StringUtils.isBlank(userTags) || user.getId() == loginUser.getId()) {
@@ -381,19 +390,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 .collect(Collectors.toList());
 
         // 原本顺序的 userId 列表
-        List<Long> userIdList = topUserPairList.stream().map(pair -> pair.getKey().getId()).collect(Collectors.toList());
+        List<Long> userIdList = topUserPairList.stream()
+                .map(pair -> pair.getKey().getId()).collect(Collectors.toList());
 
         // 补充完整用户信息
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.in("id", userIdList);
         // 脱敏并标识用户 1->user1
-        Map<Long, List<User>> userIdUserListMap = this.list(userQueryWrapper)
+        Map<Long, List<UserVO>> userIdUserListMap = this.list(userQueryWrapper)
                 .stream()
-                .map(user -> getSafetyUser(user))
-                .collect(Collectors.groupingBy(User::getId));
-        List<User> finalUserList = new ArrayList<>();
+                .map(this::getUserVO)
+                .collect(Collectors.groupingBy(UserVO::getId));
+        // 重新排序为原本顺序
+        List<UserVO> finalUserList = new ArrayList<>();
         for (Long userId : userIdList) {
-            finalUserList.add(userIdUserListMap.get(userId).get(0));
+            finalUserList.add(userIdUserListMap.get(userId).get(0)); // 每个组只有一个用户
         }
         return finalUserList;
     }
