@@ -113,6 +113,15 @@ public interface UserService extends IService<User> {
      * @return
      */
     List<UserVO> getUserVoList(List<User> userList);
+
+    /**
+     * 根据标签匹配用户
+     *
+     * @param num 匹配用户数量
+     * @param loginUser 登录用户
+     * @return 匹配的用户列表
+     */
+    List<UserVO> userMatch(long num, User loginUser);
 }
 
 
