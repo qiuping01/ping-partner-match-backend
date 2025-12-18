@@ -20,6 +20,7 @@ import com.ping.usercenter.service.TeamService;
 import com.ping.usercenter.service.UserService;
 import com.ping.usercenter.service.UserTeamService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.hssf.record.DVALRecord;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -94,13 +95,17 @@ public class TeamController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         boolean isAdmin = userService.isAdmin(request);
+        // 1. 查询队伍列表
         List<TeamUserVO> teamList = teamService.listTeams(teamQuery, isAdmin);
 
-        // 判断当前用户是否已加入队伍 -  便于前端展示是否加入队伍
+        // 2. 判断当前用户是否已加入队伍 -  便于前端展示是否加入队伍
         // 提取队伍 ID 列表
         List<Long> teamIdList = teamList.stream()
                 .map(TeamUserVO::getId)
                 .collect(Collectors.toList());
+        if (teamIdList.isEmpty()) {
+            return ResultUtils.success(teamList);  // 直接返回空列表
+        }
         // 查询当前用户加入了哪些队伍
         QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>();
         try {
@@ -121,6 +126,15 @@ public class TeamController {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        // 3. 查询已加入队伍的人数
+        QueryWrapper<UserTeam> hasJionCountQueryWrapper = new QueryWrapper<>();
+        hasJionCountQueryWrapper.in("teamId", teamIdList);
+        List<UserTeam> userTeamList = userTeamService.list(hasJionCountQueryWrapper);
+        Map<Long, List<UserTeam>> teamIdUserTeamMap = userTeamList.stream()
+                .collect(Collectors.groupingBy(UserTeam::getTeamId));
+        teamList.forEach(team ->
+                team.setHasJoinCount(teamIdUserTeamMap
+                        .getOrDefault(team.getId(), new ArrayList<>()).size()));
         return ResultUtils.success(teamList);
     }
 
